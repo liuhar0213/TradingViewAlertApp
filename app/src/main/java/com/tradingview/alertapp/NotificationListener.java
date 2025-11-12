@@ -201,10 +201,10 @@ public class NotificationListener extends NotificationListenerService {
             mediaPlayer.prepare();
             mediaPlayer.start();
 
-            // Auto stop after 30 seconds
+            // Auto stop after 5 minutes
             new Thread(() -> {
                 try {
-                    Thread.sleep(30000);
+                    Thread.sleep(300000);
                     if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                         mediaPlayer.stop();
                         mediaPlayer.release();
@@ -229,10 +229,10 @@ public class NotificationListener extends NotificationListenerService {
                 vibrator.vibrate(pattern, 0);
             }
 
-            // Auto stop vibration after 30 seconds
+            // Auto stop vibration after 5 minutes
             new Thread(() -> {
                 try {
-                    Thread.sleep(30000);
+                    Thread.sleep(300000);
                     if (vibrator != null) {
                         vibrator.cancel();
                     }
