@@ -195,14 +195,17 @@ public class AlertManager {
 
     private void vibratePhone() {
         if (vibrator != null && vibrator.hasVibrator()) {
-            long[] pattern = {0, 1000, 500, 1000, 500, 1000};
+            // 长震动pattern：震1秒，停0.5秒，循环
+            long[] pattern = {0, 1000, 500};
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // repeat index 0 means repeat from pattern[0] (infinite loop)
                 VibrationEffect effect = VibrationEffect.createWaveform(pattern, 0);
                 vibrator.vibrate(effect);
             } else {
+                // repeat index 0 means repeat from pattern[0] (infinite loop)
                 vibrator.vibrate(pattern, 0);
             }
-            Log.d(TAG, "Vibration started");
+            Log.d(TAG, "Vibration started (infinite loop)");
         }
     }
 
