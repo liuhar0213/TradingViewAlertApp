@@ -21,6 +21,9 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
@@ -28,6 +31,7 @@ jobs:
       run: ./gradlew assembleRelease
 
     - name: Sign APK
+      if: ${{ secrets.SIGNING_KEY != '' }}
       uses: r0adkll/sign-android-release@v1
       id: sign_app
       with:
@@ -39,8 +43,16 @@ jobs:
       env:
         BUILD_TOOLS_VERSION: "33.0.0"
 
-    - name: Upload APK
+    - name: Upload Signed APK
+      if: ${{ secrets.SIGNING_KEY != '' }}
       uses: actions/upload-artifact@v4
       with:
-        name: TradingViewAlertApp
+        name: TradingViewAlertApp-signed
         path: ${{steps.sign_app.outputs.signedReleaseFile}}
+
+    - name: Upload Unsigned APK
+      if: ${{ secrets.SIGNING_KEY == '' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: TradingViewAlertApp-unsigned
+        path: app/build/outputs/apk/release/*.apk
