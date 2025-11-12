@@ -34,6 +34,10 @@ public class NotificationListener extends NotificationListenerService {
     private Vibrator vibrator;
     private BroadcastReceiver testAlertReceiver;
 
+    // 防止重复报警：记录已处理的通知
+    private final java.util.Set<String> processedNotifications = new java.util.HashSet<>();
+    private static final long NOTIFICATION_COOLDOWN = 60000; // 1分钟冷却时间
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -78,8 +82,34 @@ public class NotificationListener extends NotificationListenerService {
 
         // Filter for TradingView app or email apps with "TradingView" in content
         if (isTradingViewAlert(packageName, title, text)) {
+            // 创建唯一标识符（使用通知key或组合title+text）
+            String notificationKey = sbn.getKey();
+            if (notificationKey == null) {
+                notificationKey = packageName + ":" + title + ":" + text;
+            }
+
+            // 检查是否已处理过这个通知
+            if (processedNotifications.contains(notificationKey)) {
+                Log.d(TAG, "Notification already processed, skipping: " + notificationKey);
+                return;
+            }
+
+            // 标记为已处理
+            processedNotifications.add(notificationKey);
+
             Log.i(TAG, "TradingView Alert Detected!");
             triggerAlert(title, text);
+
+            // 1分钟后清除这个通知的记录，允许相同警报再次触发
+            new Thread(() -> {
+                try {
+                    Thread.sleep(NOTIFICATION_COOLDOWN);
+                    processedNotifications.remove(notificationKey);
+                    Log.d(TAG, "Notification cooldown expired: " + notificationKey);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start();
         } else {
             // Log why it wasn't detected
             Log.d(TAG, "Not a TradingView alert - Package: " + packageName);
