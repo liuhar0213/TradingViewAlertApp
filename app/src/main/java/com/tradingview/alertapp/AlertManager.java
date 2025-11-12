@@ -224,21 +224,31 @@ public class AlertManager {
     }
 
     private void acquireWakeLock() {
-        if (wakeLock == null || !wakeLock.isHeld()) {
-            PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-            wakeLock = powerManager.newWakeLock(
-                PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
-                "TVAlert:AlertWakeLock"
-            );
-            wakeLock.acquire(ALERT_DURATION + 5000); // 3分钟 + 5秒缓冲
-            Log.d(TAG, "WakeLock acquired");
+        try {
+            if (wakeLock == null || !wakeLock.isHeld()) {
+                PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+                if (powerManager != null) {
+                    wakeLock = powerManager.newWakeLock(
+                        PowerManager.PARTIAL_WAKE_LOCK,
+                        "TVAlert:AlertWakeLock"
+                    );
+                    wakeLock.acquire(ALERT_DURATION + 5000); // 3分钟 + 5秒缓冲
+                    Log.d(TAG, "WakeLock acquired");
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error acquiring WakeLock", e);
         }
     }
 
     private void releaseWakeLock() {
-        if (wakeLock != null && wakeLock.isHeld()) {
-            wakeLock.release();
-            Log.d(TAG, "WakeLock released");
+        try {
+            if (wakeLock != null && wakeLock.isHeld()) {
+                wakeLock.release();
+                Log.d(TAG, "WakeLock released");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error releasing WakeLock", e);
         }
     }
 
