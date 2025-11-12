@@ -3,7 +3,10 @@ package com.tradingview.alertapp;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.AudioAttributes;
 import android.media.MediaPlayer;
 import android.media.RingtoneManager;
@@ -23,8 +26,10 @@ import java.io.IOException;
 public class NotificationListener extends NotificationListenerService {
     private static final String TAG = "TVAlertListener";
     private static final String CHANNEL_ID = "tv_alerts";
+    private static final String TEST_ALERT_ACTION = "com.tradingview.alertapp.TEST_ALERT";
     private MediaPlayer mediaPlayer;
     private Vibrator vibrator;
+    private BroadcastReceiver testAlertReceiver;
 
     @Override
     public void onCreate() {
@@ -32,6 +37,24 @@ public class NotificationListener extends NotificationListenerService {
         Log.d(TAG, "NotificationListener Service Created");
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         createNotificationChannel();
+
+        // Register broadcast receiver for test alerts
+        testAlertReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (TEST_ALERT_ACTION.equals(intent.getAction())) {
+                    Log.i(TAG, "Test Alert Received!");
+                    triggerAlert("Test Alert", "This is a test notification");
+                }
+            }
+        };
+
+        IntentFilter filter = new IntentFilter(TEST_ALERT_ACTION);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(testAlertReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(testAlertReceiver, filter);
+        }
     }
 
     @Override
@@ -214,6 +237,9 @@ public class NotificationListener extends NotificationListenerService {
         }
         if (vibrator != null) {
             vibrator.cancel();
+        }
+        if (testAlertReceiver != null) {
+            unregisterReceiver(testAlertReceiver);
         }
         Log.d(TAG, "NotificationListener Service Destroyed");
     }

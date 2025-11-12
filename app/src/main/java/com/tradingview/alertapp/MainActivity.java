@@ -85,19 +85,22 @@ public class MainActivity extends AppCompatActivity {
     private void showTestDialog() {
         new AlertDialog.Builder(this)
             .setTitle("Test Alert")
-            .setMessage("This will test the alert system by simulating a TradingView notification.\n\n" +
+            .setMessage("This will test the alert system.\n\n" +
                 "The alarm will play for 30 seconds and vibrate continuously.\n\n" +
                 "Continue?")
             .setPositiveButton("Test Alert", (dialog, which) -> {
-                // Simulate alert by directly calling the notification listener methods
-                // In a real scenario, you would send a test notification
-                Intent intent = new Intent(this, NotificationListener.class);
-                startService(intent);
+                // Send broadcast to trigger test alert
+                Intent intent = new Intent("com.tradingview.alertapp.TEST_ALERT");
+                intent.setPackage(getPackageName());
+                sendBroadcast(intent);
 
                 new AlertDialog.Builder(this)
-                    .setTitle("Test Sent")
-                    .setMessage("If notification access is properly configured, you should now hear an alarm and feel vibration.\n\n" +
-                        "To stop: Pull down notification shade and tap the alert notification.")
+                    .setTitle("Test Alert Triggered")
+                    .setMessage("You should now hear an alarm and feel vibration for 30 seconds.\n\n" +
+                        "If you don't hear anything:\n" +
+                        "• Check that notification access is enabled\n" +
+                        "• Check your alarm volume settings\n" +
+                        "• Make sure 'Do Not Disturb' is off")
                     .setPositiveButton("OK", null)
                     .show();
             })
