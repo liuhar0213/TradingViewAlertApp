@@ -1,0 +1,107 @@
+package com.tradingview.alertapp;
+
+import android.app.AlertDialog;
+import android.content.ComponentName;
+import android.content.Intent;
+import android.os.Bundle;
+import android.provider.Settings;
+import android.text.TextUtils;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+    private TextView statusText;
+    private Button enableButton;
+    private Button testButton;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        statusText = findViewById(R.id.statusText);
+        enableButton = findViewById(R.id.enableButton);
+        testButton = findViewById(R.id.testButton);
+
+        enableButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openNotificationSettings();
+            }
+        });
+
+        testButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showTestDialog();
+            }
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateStatus();
+    }
+
+    private void updateStatus() {
+        if (isNotificationServiceEnabled()) {
+            statusText.setText("✓ Notification Listener is ENABLED\n\n" +
+                "The app is now monitoring:\n" +
+                "• TradingView app notifications\n" +
+                "• Email notifications containing 'TradingView' or 'Alert'\n\n" +
+                "When detected, it will:\n" +
+                "• Play loud alarm sound\n" +
+                "• Vibrate continuously\n" +
+                "• Show alert notification");
+            statusText.setTextColor(0xFF4CAF50); // Green
+            enableButton.setEnabled(false);
+            enableButton.setText("Notification Access Granted");
+            testButton.setEnabled(true);
+        } else {
+            statusText.setText("✗ Notification Listener is DISABLED\n\n" +
+                "Please enable notification access for this app to monitor TradingView alerts.");
+            statusText.setTextColor(0xFFF44336); // Red
+            enableButton.setEnabled(true);
+            enableButton.setText("Enable Notification Access");
+            testButton.setEnabled(false);
+        }
+    }
+
+    private boolean isNotificationServiceEnabled() {
+        ComponentName cn = new ComponentName(this, NotificationListener.class);
+        String flat = Settings.Secure.getString(getContentResolver(), "enabled_notification_listeners");
+        return flat != null && flat.contains(cn.flattenToString());
+    }
+
+    private void openNotificationSettings() {
+        Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
+        startActivity(intent);
+    }
+
+    private void showTestDialog() {
+        new AlertDialog.Builder(this)
+            .setTitle("Test Alert")
+            .setMessage("This will test the alert system by simulating a TradingView notification.\n\n" +
+                "The alarm will play for 30 seconds and vibrate continuously.\n\n" +
+                "Continue?")
+            .setPositiveButton("Test Alert", (dialog, which) -> {
+                // Simulate alert by directly calling the notification listener methods
+                // In a real scenario, you would send a test notification
+                Intent intent = new Intent(this, NotificationListener.class);
+                startService(intent);
+
+                new AlertDialog.Builder(this)
+                    .setTitle("Test Sent")
+                    .setMessage("If notification access is properly configured, you should now hear an alarm and feel vibration.\n\n" +
+                        "To stop: Pull down notification shade and tap the alert notification.")
+                    .setPositiveButton("OK", null)
+                    .show();
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
+    }
+}
