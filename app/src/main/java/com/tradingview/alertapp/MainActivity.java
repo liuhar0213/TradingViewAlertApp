@@ -98,7 +98,9 @@ public class MainActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
             .setTitle("Test Alert")
             .setMessage("This will test the alert system.\n\n" +
-                "The alarm will play for 5 minutes and vibrate continuously.\n\n" +
+                "• Alarm duration: 3 minutes\n" +
+                "• Repeats: 6 times (every 10 minutes)\n" +
+                "• You can stop it manually\n\n" +
                 "Continue?")
             .setPositiveButton("Test Alert", (dialog, which) -> {
                 // Send broadcast to trigger test alert
@@ -108,7 +110,9 @@ public class MainActivity extends AppCompatActivity {
 
                 new AlertDialog.Builder(this)
                     .setTitle("Test Alert Triggered")
-                    .setMessage("You should now hear an alarm and feel vibration for 5 minutes.\n\n" +
+                    .setMessage("You should now hear an alarm and feel vibration for 3 minutes.\n\n" +
+                        "It will repeat 6 times every 10 minutes.\n" +
+                        "Tap 'Stop' in the notification to cancel.\n\n" +
                         "If you don't hear anything:\n" +
                         "• Check that notification access is enabled\n" +
                         "• Check your alarm volume settings\n" +

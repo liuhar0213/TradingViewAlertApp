@@ -30,8 +30,7 @@ public class NotificationListener extends NotificationListenerService {
     private static final String TAG = "TVAlertListener";
     private static final String CHANNEL_ID = "tv_alerts";
     private static final String TEST_ALERT_ACTION = "com.tradingview.alertapp.TEST_ALERT";
-    private MediaPlayer mediaPlayer;
-    private Vibrator vibrator;
+    private AlertManager alertManager;
     private BroadcastReceiver testAlertReceiver;
 
     // 防止重复报警：记录已处理的通知
@@ -42,7 +41,7 @@ public class NotificationListener extends NotificationListenerService {
     public void onCreate() {
         super.onCreate();
         Log.d(TAG, "NotificationListener Service Created");
-        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        alertManager = new AlertManager(this);
         createNotificationChannel();
 
         // Register broadcast receiver for test alerts
@@ -51,7 +50,7 @@ public class NotificationListener extends NotificationListenerService {
             public void onReceive(Context context, Intent intent) {
                 if (TEST_ALERT_ACTION.equals(intent.getAction())) {
                     Log.i(TAG, "Test Alert Received!");
-                    triggerAlert("Test Alert", "This is a test notification");
+                    alertManager.triggerAlert("Test Alert", "This is a test notification");
                 }
             }
         };
@@ -100,7 +99,7 @@ public class NotificationListener extends NotificationListenerService {
             processedNotifications.add(notificationKey);
 
             Log.i(TAG, "TradingView Alert Detected!");
-            triggerAlert(title, text);
+            alertManager.triggerAlert(title, text);
 
             // 1分钟后清除这个通知的记录，允许相同警报再次触发
             new Thread(() -> {
@@ -164,100 +163,6 @@ public class NotificationListener extends NotificationListenerService {
         return false;
     }
 
-    private void triggerAlert(String title, String text) {
-        // Play alarm sound
-        playAlarmSound();
-
-        // Vibrate
-        vibratePhone();
-
-        // Show custom notification
-        showAlertNotification(title, text);
-    }
-
-    private void playAlarmSound() {
-        try {
-            if (mediaPlayer != null) {
-                mediaPlayer.stop();
-                mediaPlayer.release();
-            }
-
-            // Use alarm sound
-            Uri alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-            if (alarmUri == null) {
-                alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-            }
-
-            mediaPlayer = new MediaPlayer();
-            mediaPlayer.setDataSource(this, alarmUri);
-
-            AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_ALARM)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build();
-            mediaPlayer.setAudioAttributes(audioAttributes);
-
-            mediaPlayer.setLooping(true);
-            mediaPlayer.prepare();
-            mediaPlayer.start();
-
-            // Auto stop after 5 minutes
-            new Thread(() -> {
-                try {
-                    Thread.sleep(300000);
-                    if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-                        mediaPlayer.stop();
-                        mediaPlayer.release();
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }).start();
-
-        } catch (IOException e) {
-            Log.e(TAG, "Error playing alarm sound", e);
-        }
-    }
-
-    private void vibratePhone() {
-        if (vibrator != null && vibrator.hasVibrator()) {
-            long[] pattern = {0, 1000, 500, 1000, 500, 1000};
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                VibrationEffect effect = VibrationEffect.createWaveform(pattern, 0);
-                vibrator.vibrate(effect);
-            } else {
-                vibrator.vibrate(pattern, 0);
-            }
-
-            // Auto stop vibration after 5 minutes
-            new Thread(() -> {
-                try {
-                    Thread.sleep(300000);
-                    if (vibrator != null) {
-                        vibrator.cancel();
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }).start();
-        }
-    }
-
-    private void showAlertNotification(String title, String text) {
-        NotificationManager notificationManager =
-            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setContentTitle("TradingView Alert!")
-            .setContentText(title + ": " + text)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setAutoCancel(true)
-            .setFullScreenIntent(null, true);
-
-        notificationManager.notify(1, builder.build());
-    }
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -289,12 +194,8 @@ public class NotificationListener extends NotificationListenerService {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
-        if (vibrator != null) {
-            vibrator.cancel();
+        if (alertManager != null) {
+            alertManager.cleanup();
         }
         if (testAlertReceiver != null) {
             unregisterReceiver(testAlertReceiver);
