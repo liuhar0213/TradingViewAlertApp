@@ -13,6 +13,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.util.Log;
@@ -38,6 +39,7 @@ public class AlertManager {
     private MediaPlayer mediaPlayer;
     private final Handler handler;
     private final NotificationManager notificationManager;
+    private PowerManager.WakeLock wakeLock;
 
     // 跟踪每个警报的重复次数
     private final Map<String, AlertInfo> activeAlerts = new HashMap<>();
@@ -108,6 +110,9 @@ public class AlertManager {
 
     private void performAlert(String alertKey, AlertInfo alertInfo) {
         Log.i(TAG, "Performing alert " + (alertInfo.repeatCount + 1) + "/" + MAX_REPEATS + ": " + alertKey);
+
+        // 获取 WakeLock 防止设备休眠影响振动和声音
+        acquireWakeLock();
 
         // 播放声音和震动
         playAlarmSound();
@@ -218,6 +223,25 @@ public class AlertManager {
         }
     }
 
+    private void acquireWakeLock() {
+        if (wakeLock == null || !wakeLock.isHeld()) {
+            PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            wakeLock = powerManager.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                "TVAlert:AlertWakeLock"
+            );
+            wakeLock.acquire(ALERT_DURATION + 5000); // 3分钟 + 5秒缓冲
+            Log.d(TAG, "WakeLock acquired");
+        }
+    }
+
+    private void releaseWakeLock() {
+        if (wakeLock != null && wakeLock.isHeld()) {
+            wakeLock.release();
+            Log.d(TAG, "WakeLock released");
+        }
+    }
+
     private void stopSoundAndVibration() {
         if (mediaPlayer != null && mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
@@ -230,6 +254,8 @@ public class AlertManager {
             vibrator.cancel();
             Log.d(TAG, "Vibration stopped");
         }
+
+        releaseWakeLock();
     }
 
     private void showAlertNotification(String alertKey, AlertInfo alertInfo) {
@@ -245,7 +271,15 @@ public class AlertManager {
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        String contentText = String.format("Alert %d/%d: %s - %s",
+        // 创建点击通知的Intent（点击也能停止）
+        PendingIntent contentIntent = PendingIntent.getBroadcast(
+            context,
+            alertInfo.notificationId + 10000,
+            stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        String contentText = String.format("Alert %d/%d: %s - %s\n\n👆 点击通知或按下方\"停止\"按钮关闭警报",
             alertInfo.repeatCount, MAX_REPEATS, alertInfo.title, alertInfo.message);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "tv_alerts")
@@ -257,7 +291,8 @@ public class AlertManager {
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setAutoCancel(false)
             .setOngoing(true)
-            .addAction(android.R.drawable.ic_delete, "Stop", stopPendingIntent);
+            .setContentIntent(contentIntent)  // 点击通知也能停止
+            .addAction(android.R.drawable.ic_delete, "停止", stopPendingIntent);
 
         notificationManager.notify(alertInfo.notificationId, builder.build());
         Log.d(TAG, "Alert notification shown with Stop button");
