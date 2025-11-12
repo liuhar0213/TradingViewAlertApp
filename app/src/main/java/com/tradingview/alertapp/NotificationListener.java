@@ -13,11 +13,14 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.core.app.NotificationCompat;
 
@@ -70,11 +73,26 @@ public class NotificationListener extends NotificationListenerService {
         Log.d(TAG, "Title: " + title);
         Log.d(TAG, "Text: " + text);
 
+        // Show toast for debugging (临时调试用)
+        showDebugToast("通知: " + packageName + "\n标题: " + title);
+
         // Filter for TradingView app or email apps with "TradingView" in content
         if (isTradingViewAlert(packageName, title, text)) {
             Log.i(TAG, "TradingView Alert Detected!");
             triggerAlert(title, text);
+        } else {
+            // Log why it wasn't detected
+            Log.d(TAG, "Not a TradingView alert - Package: " + packageName);
         }
+    }
+
+    private void showDebugToast(final String message) {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private boolean isTradingViewAlert(String packageName, String title, String text) {
