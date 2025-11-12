@@ -195,17 +195,26 @@ public class AlertManager {
 
     private void vibratePhone() {
         if (vibrator != null && vibrator.hasVibrator()) {
-            // 长震动pattern：震1秒，停0.5秒，循环
-            // pattern[0]=0 是初始延迟，pattern[1]=1000 是振动1秒，pattern[2]=500 是停0.5秒
-            // repeat=1 表示从pattern[1]开始无限循环（振动1秒->停0.5秒->振动1秒->停0.5秒...）
-            long[] pattern = {0, 1000, 500};
+            // 使用足够长的振动pattern来覆盖3分钟
+            // 每个周期：振1秒，停0.5秒 = 1.5秒
+            // 3分钟 = 180秒 = 120个周期
+            // 使用-1表示不重复，直接播放完整个pattern
+            long[] pattern = new long[241]; // 0 + 120*2 = 241个元素
+            pattern[0] = 0; // 初始延迟
+            for (int i = 1; i < 241; i += 2) {
+                pattern[i] = 1000;     // 振动1秒
+                if (i + 1 < 241) {
+                    pattern[i + 1] = 500;  // 停0.5秒
+                }
+            }
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                VibrationEffect effect = VibrationEffect.createWaveform(pattern, 1);
+                VibrationEffect effect = VibrationEffect.createWaveform(pattern, -1);
                 vibrator.vibrate(effect);
             } else {
-                vibrator.vibrate(pattern, 1);
+                vibrator.vibrate(pattern, -1);
             }
-            Log.d(TAG, "Vibration started (infinite loop from index 1)");
+            Log.d(TAG, "Vibration started (3-minute pattern, no repeat)");
         }
     }
 
