@@ -83,8 +83,10 @@ public class NotificationListener extends NotificationListenerService {
         // Filter for TradingView app or email apps with "TradingView" in content
         if (isTradingViewAlert(packageName, title, text)) {
             // 创建唯一标识符（使用通知key或组合title+text）
-            String notificationKey = sbn.getKey();
-            if (notificationKey == null) {
+            final String notificationKey;
+            if (sbn.getKey() != null) {
+                notificationKey = sbn.getKey();
+            } else {
                 notificationKey = packageName + ":" + title + ":" + text;
             }
 
