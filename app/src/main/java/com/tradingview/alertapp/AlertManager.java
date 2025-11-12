@@ -196,16 +196,16 @@ public class AlertManager {
     private void vibratePhone() {
         if (vibrator != null && vibrator.hasVibrator()) {
             // 长震动pattern：震1秒，停0.5秒，循环
+            // pattern[0]=0 是初始延迟，pattern[1]=1000 是振动1秒，pattern[2]=500 是停0.5秒
+            // repeat=1 表示从pattern[1]开始无限循环（振动1秒->停0.5秒->振动1秒->停0.5秒...）
             long[] pattern = {0, 1000, 500};
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // repeat index 0 means repeat from pattern[0] (infinite loop)
-                VibrationEffect effect = VibrationEffect.createWaveform(pattern, 0);
+                VibrationEffect effect = VibrationEffect.createWaveform(pattern, 1);
                 vibrator.vibrate(effect);
             } else {
-                // repeat index 0 means repeat from pattern[0] (infinite loop)
-                vibrator.vibrate(pattern, 0);
+                vibrator.vibrate(pattern, 1);
             }
-            Log.d(TAG, "Vibration started (infinite loop)");
+            Log.d(TAG, "Vibration started (infinite loop from index 1)");
         }
     }
 
