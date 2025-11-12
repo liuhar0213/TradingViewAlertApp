@@ -104,18 +104,26 @@ public class NotificationListener extends NotificationListenerService {
 
         // Email apps with TradingView in content
         String[] emailApps = {
-            "com.google.android.gm",      // Gmail
-            "com.microsoft.office.outlook", // Outlook
-            "com.yahoo.mobile.client",     // Yahoo Mail
-            "com.samsung.android.email"    // Samsung Email
+            "com.google.android.gm",           // Gmail
+            "com.microsoft.office.outlook",    // Outlook
+            "com.yahoo.mobile.client",         // Yahoo Mail
+            "com.samsung.android.email",       // Samsung Email
+            "com.tencent.androidqqmail",       // QQ邮箱
+            "com.tencent.qqlite",              // QQ轻聊版
+            "com.tencent.mobileqq"             // QQ (可能也用于邮件通知)
         };
 
         for (String emailApp : emailApps) {
             if (packageName.equals(emailApp)) {
                 String content = (title + " " + text).toLowerCase();
+                // 检测TradingView相关关键词
                 if (content.contains("tradingview") ||
                     content.contains("alert") ||
-                    content.contains("警报")) {
+                    content.contains("警报") ||
+                    content.contains("提醒") ||
+                    content.contains("btc") ||
+                    content.contains("eth") ||
+                    content.contains("usdt")) {
                     return true;
                 }
             }
