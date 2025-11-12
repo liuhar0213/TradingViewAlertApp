@@ -30,29 +30,8 @@ jobs:
     - name: Build with Gradle
       run: ./gradlew assembleRelease
 
-    - name: Sign APK
-      if: ${{ secrets.SIGNING_KEY != '' }}
-      uses: r0adkll/sign-android-release@v1
-      id: sign_app
-      with:
-        releaseDirectory: app/build/outputs/apk/release
-        signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-        alias: ${{ secrets.ALIAS }}
-        keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-        keyPassword: ${{ secrets.KEY_PASSWORD }}
-      env:
-        BUILD_TOOLS_VERSION: "33.0.0"
-
-    - name: Upload Signed APK
-      if: ${{ secrets.SIGNING_KEY != '' }}
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: TradingViewAlertApp-signed
-        path: ${{steps.sign_app.outputs.signedReleaseFile}}
-
-    - name: Upload Unsigned APK
-      if: ${{ secrets.SIGNING_KEY == '' }}
-      uses: actions/upload-artifact@v4
-      with:
-        name: TradingViewAlertApp-unsigned
+        name: TradingViewAlertApp
         path: app/build/outputs/apk/release/*.apk
